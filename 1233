@@ -1,0 +1,146 @@
+---
+  title: "Diseases_and_Economics_C1"
+author: "Shijinqiu Gao"
+date: "7/30/2019"
+output: html_document
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
+
+# Read data file to date frame
+```{r}
+Insurance <- read.csv("Health_Insurance.csv", header = TRUE)
+attach(Insurance)
+```
+
+# Count number of beneficiaries each state
+
+```{r}
+sort(table(StateCode))
+```
+
+
+# Calculate median insurance cost/person each state
+```{r}
+InsurMed <- aggregate(Insurance$IndividualRate, list(Insurance$StateCode), median)
+colnames(InsurMed)[colnames(InsurMed)=="Group.1"] <- "state"
+colnames(InsurMed)[colnames(InsurMed)=="x"] <- "Med_Insur_Cost"
+head(InsurMed)
+```
+
+
+# Calculate mean rate for each state
+```{r}
+InsurMean <- aggregate(Insurance$IndividualRate, list(Insurance$StateCode), mean)
+colnames(InsurMean)[colnames(InsurMean)=="Group.1"] <- "state"
+colnames(InsurMean)[colnames(InsurMean)=="x"] <- "Mean_Insur_Cost"
+head(InsurMean)
+```
+
+# Plot on map by state
+```{r}
+library(usmap)
+library(ggplot2)
+```
+
+```{r}
+Rate2016 <- subset(Insurance, BusinessYear == 2016)
+InsurMed2016 <- aggregate(Rate2016$IndividualRate, list(Rate2016$StateCode), median)
+colnames(InsurMed2016)[colnames(InsurMed2016)=="Group.1"] <- "state"
+colnames(InsurMed2016)[colnames(InsurMed2016)=="x"] <- "Med_Insur_Cost_2016"
+head(InsurMed2016)
+```
+
+
+```{r}
+plot_usmap(data = InsurMed2016, values = "Med_Insur_Cost_2016", lines = "grey") +
+  scale_fill_continuous(
+    low = "lightblue", high = "darkblue", name = "") +
+  theme(legend.position = "right") +
+  labs(title = "Median 2016 Health Insurance Plan Individual Premiums ($/month)") 
+```
+
+
+
+# Why some states are missing
+
+```{r}
+IndictInRate <- subset(Insurance, select = c(1, 2, 15))
+IndictInRate$IndividualRate[Insurance$IndividualRate == 999999 ] <-0
+IndictInRate$IndividualRate[Insurance$IndividualRate == 9999 ] <-0
+IndictInRate$MissingIndicator[IndictInRate$IndividualRate == 0]<-1
+IndictInRate$MissingIndicator[IndictInRate$IndividualRate > 0]<-0
+head(IndictInRate)
+```
+
+# Compare with cancer
+
+```{r}
+head(InsurMed2016)
+```
+
+```{r}
+Cancer <- read.csv("USCancer.csv", header = TRUE)
+Cancer$Area <- c('NM', 'AZ', 'CA', 'CO', 'DC', 'NV', 'AK', 'HI', 'MA', 'OR', 'TX', 'UT', 'VA', 'WY', 'FL', 'ID', 'IN', 'MD', 'MI', 'MN', 'MO', 'NE', 'ND', 'OK', 'RI', 'SC', 'SD', 'TN', 'VT', 'MA', 'AL', 'AR', 'CT', 'DE', 'GA', 'IL', 'IA', 'KS', 'KY', 'LA', 'ME', 'MS', 'MT', 'NH', 'NJ', 'NY', 'NC', 'OH', 'PA', 'WV', 'WI')
+C_rate <- subset(Cancer, select = c(1, 5))
+colnames(C_rate)[colnames(C_rate)=="Area"] <- "state"
+head(C_rate)
+```
+
+
+```{r}
+Insur_Cancer_rate <- merge(InsurMed2016, C_rate)
+head(Insur_Cancer_rate)
+```
+
+```{r}
+cor.test(x = Insur_Cancer_rate$Med_Insur_Cost_2016, y = Insur_Cancer_rate$AgeAdjustedRate, method = 'spearman')
+```
+
+
+# Compare with stroke
+
+```{r}
+Stroke <- read.csv("stroke_mortality.csv", header = TRUE)
+Stroke2016 <- subset(Stroke, YEAR == 2016)
+S_rate <- subset(Stroke2016, select = c(2, 3))
+colnames(S_rate)[colnames(S_rate)=="STATE"] <- "state"
+head(S_rate)
+```
+
+
+```{r}
+Insur_Stroke_rate <- merge(InsurMed2016, S_rate)
+head(Insur_Stroke_rate)
+```
+
+```{r}
+cor.test(x = Insur_Stroke_rate$Med_Insur_Cost_2016, y = Insur_Stroke_rate$RATE, method = 'spearman')
+```
+
+
+# Look at worldwide disease burden
+
+The treemap shown us that the non-communicable diseases have higher percent of DALY(disability-adjusted life year), also these diseases have higher annual percent change. Differenctly, the percent of total DALYS of the communicable, maternal, neonatal, nutritional diseases and injures are much lower than non-communicable diseases, and also the annual percent change is very small. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
